@@ -1,0 +1,20 @@
+---
+type: project
+name: Compare Apps
+description: Compre the configuration and environment for two running apps.
+actions:
+  -
+    name: compare
+    template: compare-apps-workflow
+
+categories: ["devops"]
+publish:
+  branches:
+    - master
+labels:
+    publisher: Applatix
+
+assets:
+    icon:     /compare.png
+    publisher_icon: /AX_Pub.png
+    detail:   /README.md

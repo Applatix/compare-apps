@@ -1,0 +1,76 @@
+---
+type: container
+name: get-app-data2
+
+inputs:
+  parameters:
+    app1:
+    app2:
+
+outputs:
+  artifacts:
+    data:
+      path: /tmp/data
+
+container:
+  image: wernight/kubectl:1.6.4
+  resources:
+    mem_mib: 256
+    cpu_cores: 0.1
+  commands: ["/bin/sh", "-c"]
+  args: ["mkdir /tmp/data && cd /tmp/data && kubectl get pods --namespace %%app1%% -o json > %%app1%% && kubectl get pods --namespace %%app2%% -o json > %%app2%% && more /tmp/data/*"]
+
+---
+type: container
+name: compare-apps
+
+inputs:
+  parameters:
+    app1:
+    app2:
+    code:
+    data:
+  artifacts:
+  - from: "%%code%%"
+    path: /tmp/code
+  - from: "%%data%%"
+    path: /tmp/data
+
+outputs:
+  artifacts:
+    diff:
+      path: /tmp/diff
+
+container:
+  image: python:alpine3.6
+  resources:
+    mem_mib: 256
+    cpu_cores: 0.1
+  command: "mkdir /tmp/diff && cd /tmp/data && python /tmp/code/compare-apps.py %%app1%% %%app2%% > /tmp/diff/output.txt && cat /tmp/diff/output.txt"
+
+---
+type: workflow
+name: compare-apps-workflow
+description: compare the configuration and environment for two running apps
+
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+    app1:
+    app2:
+
+steps:
+-
+  checkout:
+    template: axscm-checkout
+  get:
+    template: get-app-data2
+-
+  compare::
+    template: compare-apps
+    parameters:
+      code: "%%steps.checkout.code%%"
+      data: "%%steps.get.data%%"
